@@ -18,7 +18,7 @@
 ### Этап 1: Инфраструктура как код (Terraform)
 Создание виртуальных машин, сетей и правил доступа.
 Секреты YC находятся в файле terraform.tfvars
-
+bash
 
 terraform apply -auto-approve
 
@@ -36,9 +36,9 @@ ansible-playbook -i inventory.ini site.yml
 
 Ключевые особенности конфигурации:
 
-    Динамический DB_HOST: IP-адрес базы данных автоматически извлекается из фактов хоста db и подставляется в wp-config.php.
-    Безопасность: Права на wp-config.php установлены в 0640 (владелец www-data).
-    Сетевая связность: Локальный файервол (UFW) отключен, управление трафиком перенесено на уровень облачных Security Groups.
+Динамический DB_HOST: IP-адрес базы данных автоматически извлекается из фактов хоста db и подставляется в wp-config.php.
+Безопасность: Права на wp-config.php установлены в 0640 (владелец www-data).
+Сетевая связность: Локальный файервол (UFW) отключен, управление трафиком перенесено на уровень облачных Security Groups.
 
 ### Этап 3: Настройка балансировки
 Конфигурация Nginx на балансировщике поддерживает гибкое переключение методов распределения нагрузки.
@@ -46,7 +46,7 @@ ansible-playbook -i inventory.ini site.yml
 nginx
 
     upstream wordpress_backend {
-        ip_hash; # Раскомментировать - Привязка сессии по IP
+        # ip_hash; # Раскомментировать - Привязка сессии по IP
         server 192.168.10.25:80;
         server 192.168.10.15:80;
     }
@@ -59,29 +59,29 @@ nginx
 Команда:
 bash
 
-for i in {1..4}; do curl -s 158.160.37.11/whoami.txt; done
+    for i in {1..4}; do curl -s 158.160.37.11/whoami.txt; done
 
 Результат:
 text
 
-RESPONDING FROM: APP-SERVER-2 (192.168.10.15)
-RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
-RESPONDING FROM: APP-SERVER-2 (192.168.10.15)
-RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
-RESPONDING FROM: APP-SERVER-2 (192.168.10.15)
-RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
+    RESPONDING FROM: APP-SERVER-2 (192.168.10.15)
+    RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
+    RESPONDING FROM: APP-SERVER-2 (192.168.10.15)
+    RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
+    RESPONDING FROM: APP-SERVER-2 (192.168.10.15)
+    RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
 
 Тест 2: Метод IP Hash (Привязка сессии)
 Обеспечивает направление одного и того же клиента на один и тот же бэкенд.
 Результат после включения ip_hash:
 text
 
-RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
-RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
-RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
-RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
-RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
-RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
+    RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
+    RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
+    RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
+    RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
+    RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
+    RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
 
 Тест 3: Отказоустойчивость (Fault Tolerance)
 Демонстрация работы сайта при выходе из строя одного бэкенда.
