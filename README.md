@@ -45,11 +45,11 @@ ansible-playbook -i inventory.ini site.yml
 Пример конфигурации Upstream (/etc/nginx/sites-enabled/balancer):
 nginx
 
-upstream wordpress_backend {
-    ip_hash; # Раскомментировать - Привязка сессии по IP
-    server 192.168.10.25:80;
-    server 192.168.10.15:80;
-}
+    upstream wordpress_backend {
+        ip_hash; # Раскомментировать - Привязка сессии по IP
+        server 192.168.10.25:80;
+        server 192.168.10.15:80;
+    }
 
 
 ## 2. Тестирование
