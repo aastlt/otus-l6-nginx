@@ -1,36 +1,29 @@
 # --- Terraform ---
-# Скрываем файлы с секретами и переменными
 *.tfvars
 *.tfvars.json
 terraform.tfvars
 override.tf
 
-# Скрываем локальное состояние инфраструктуры (содержит пароли в открытом виде)
 .terraform/
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl
 
-# Логи терраформа
 crash.log
 *.usage.txt
 
 # --- Ansible ---
-# Скрываем файл инвентаризации, если в нем прописаны IP или пароли
 inventory.ini
 hosts.ini
 
-# Скрываем временные файлы и retry-файлы
 *.retry
 *.log
 .ansible_cache/
 
-# Скрываем секретные переменные (если не используете Ansible Vault)
 group_vars/all/secret.yml
 vars/secrets.yml
 
 # --- SSH & Ключи ---
-# Скрываем приватные ключи для доступа к ВМ
 *.pem
 *.key
 id_rsa

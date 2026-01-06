@@ -89,7 +89,7 @@ resource "yandex_compute_instance" "balancer" {
   network_interface {
     subnet_id          = yandex_vpc_subnet.subnet.id
     nat                = true
-    security_group_ids = [yandex_vpc_security_group.web-sg.id] # ДОБАВЛЕНО
+    security_group_ids = [yandex_vpc_security_group.web-sg.id]
   }
   metadata = {
     ssh-keys = "${local.vm_user}:${local.ssh_key}"
@@ -113,7 +113,7 @@ resource "yandex_compute_instance" "app" {
   }
   network_interface {
     subnet_id          = yandex_vpc_subnet.subnet.id
-    security_group_ids = [yandex_vpc_security_group.web-sg.id] # ДОБАВЛЕНО
+    security_group_ids = [yandex_vpc_security_group.web-sg.id]
   }
   metadata = {
     ssh-keys = "${local.vm_user}:${local.ssh_key}"
@@ -136,7 +136,7 @@ resource "yandex_compute_instance" "db" {
   }
   network_interface {
     subnet_id          = yandex_vpc_subnet.subnet.id
-    security_group_ids = [yandex_vpc_security_group.web-sg.id] # ДОБАВЛЕНО
+    security_group_ids = [yandex_vpc_security_group.web-sg.id]
   }
   metadata = {
     ssh-keys = "${local.vm_user}:${local.ssh_key}"
