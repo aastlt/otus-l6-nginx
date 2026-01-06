@@ -46,7 +46,7 @@ ansible-playbook -i inventory.ini site.yml
 nginx
 
 upstream wordpress_backend {
-#    ip_hash; # Раскомментировать - Привязка сессии по IP
+    ip_hash; # Раскомментировать - Привязка сессии по IP
     server 192.168.10.25:80;
     server 192.168.10.15:80;
 }
