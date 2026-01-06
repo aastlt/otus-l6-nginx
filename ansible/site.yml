@@ -1,0 +1,176 @@
+---
+- name: Global Preparation
+  hosts: all
+  become: true
+  tasks:
+    - name: Gather Service Facts
+      ansible.builtin.service_facts:
+
+    - name: Disable UFW Firewall inside OS
+      ansible.builtin.systemd:
+        name: ufw
+        state: stopped
+        enabled: false
+      when: "'ufw.service' in services"
+
+    - name: Ensure Python 3 is present
+      ansible.builtin.apt:
+        name: python3
+        state: present
+        update_cache: true
+
+# 1. Настройка базы данных
+- name: Setup Database Server
+  hosts: db
+  become: true
+  vars:
+    db_name: wordpress
+    db_user: wp_user
+    db_pass: wp_password_2026
+  tasks:
+    - name: Wait For Apt Lock
+      ansible.builtin.shell: |
+        while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done
+      changed_when: false
+
+    - name: Install MariaDB Packages
+      ansible.builtin.apt:
+        name: [mariadb-server, python3-pymysql]
+        state: present
+        update_cache: true
+
+    - name: Configure MariaDB Bind Address
+      ansible.builtin.lineinfile:
+        path: /etc/mysql/mariadb.conf.d/50-server.cnf
+        regexp: '^bind-address'
+        line: 'bind-address = 0.0.0.0'
+      notify: Restart MariaDB
+
+    - name: Create WordPress Database
+      community.mysql.mysql_db:
+        name: "{{ db_name }}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Create WordPress DB User
+      community.mysql.mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_pass }}"
+        priv: "{{ db_name }}.*:ALL"
+        host: "%"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+  handlers:
+    - name: Restart MariaDB
+      ansible.builtin.service:
+        name: mariadb
+        state: restarted
+
+# 2. Настройка App-серверов
+- name: Setup WordPress App Nodes
+  hosts: apps
+  become: true
+  vars:
+    db_name: wordpress
+    db_user: wp_user
+    db_pass: wp_password_2026
+  tasks:
+    - name: Install PHP, Nginx and Archivers
+      ansible.builtin.apt:
+        name: [nginx, php-fpm, php-mysql, php-curl, php-gd, php-intl, php-mbstring, php-xml, php-zip, tar, unzip]
+        state: present
+
+    - name: Download and Extract WordPress
+      ansible.builtin.unarchive:
+        src: "http://wordpress.org/latest.tar.gz"
+        dest: /var/www/
+        remote_src: true
+        owner: www-data
+        group: www-data
+
+    - name: Configure Wp-Config from Sample
+      ansible.builtin.copy:
+        src: /var/www/wordpress/wp-config-sample.php
+        dest: /var/www/wordpress/wp-config.php
+        remote_src: true
+        owner: www-data
+        group: www-data
+        mode: '0640'
+        force: false
+
+    - name: Set DB Config In WordPress (Dynamic IP)
+      ansible.builtin.lineinfile:
+        path: /var/www/wordpress/wp-config.php
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: "database_name_here", line: "define( 'DB_NAME', '{{ db_name }}' );" }
+        - { regexp: "username_here", line: "define( 'DB_USER', '{{ db_user }}' );" }
+        - { regexp: "password_here", line: "define( 'DB_PASSWORD', '{{ db_pass }}' );" }
+        # Берем IP первого хоста из группы 'db' динамически:
+        - { regexp: "localhost", line: "define( 'DB_HOST', '{{ hostvars[groups['db'][0]]['ansible_host'] }}' );" }
+
+    - name: Copy Nginx App Config
+      ansible.builtin.template:
+        src: templates/app_nginx.conf.j2
+        dest: /etc/nginx/sites-available/wordpress
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Nginx
+
+    - name: Enable WordPress Site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/wordpress
+        dest: /etc/nginx/sites-enabled/wordpress
+        state: link
+
+    - name: Remove Default Config Link
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Restart Nginx
+
+  handlers:
+    - name: Restart Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+
+# 3. Настройка Балансировщика
+- name: Setup Nginx Balancer
+  hosts: lb
+  become: true
+  tasks:
+    - name: Install Nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+
+    - name: Copy Balancer Config (Dynamic Upstream)
+      ansible.builtin.template:
+        src: templates/lb_nginx.conf.j2
+        dest: /etc/nginx/sites-available/balancer
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Nginx Balancer
+
+    - name: Enable Balancer Site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/balancer
+        dest: /etc/nginx/sites-enabled/balancer
+        state: link
+
+    - name: Remove Default Config Link
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Restart Nginx Balancer
+
+  handlers:
+    - name: Restart Nginx Balancer
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
