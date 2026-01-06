@@ -18,9 +18,8 @@
 ### Этап 1: Инфраструктура как код (Terraform)
 Создание виртуальных машин, сетей и правил доступа.
 Секреты YC находятся в файле terraform.tfvars
-bash
 
-terraform apply -auto-approve
+    terraform apply -auto-approve
 
 Актуальные адреса (Outputs):
 
@@ -30,9 +29,8 @@ terraform apply -auto-approve
 
 ### Этап 2: Конфигурация (Ansible)
 Автоматическая установка ПО и связывание компонентов.
-bash
 
-ansible-playbook -i inventory.ini site.yml
+    ansible-playbook -i inventory.ini site.yml
 
 Ключевые особенности конфигурации:
 
@@ -43,7 +41,6 @@ ansible-playbook -i inventory.ini site.yml
 ### Этап 3: Настройка балансировки
 Конфигурация Nginx на балансировщике поддерживает гибкое переключение методов распределения нагрузки.
 Пример конфигурации Upstream (/etc/nginx/sites-enabled/balancer):
-nginx
 
     upstream wordpress_backend {
         # ip_hash; # Раскомментировать - Привязка сессии по IP
@@ -57,12 +54,10 @@ nginx
 Тест 1: Метод Round-robin (Циклическая балансировка)
 Запросы распределяются по очереди между серверами приложений.
 Команда:
-bash
 
     for i in {1..4}; do curl -s 158.160.37.11/whoami.txt; done
 
 Результат:
-text
 
     RESPONDING FROM: APP-SERVER-2 (192.168.10.15)
     RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
@@ -74,7 +69,6 @@ text
 Тест 2: Метод IP Hash (Привязка сессии)
 Обеспечивает направление одного и того же клиента на один и тот же бэкенд.
 Результат после включения ip_hash:
-text
 
     RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
     RESPONDING FROM: APP-SERVER-1 (192.168.10.25)
@@ -93,7 +87,6 @@ text
 
 ## 3. Итоги
 В ходе выполнения проекта был реализован отказоустойчивый веб-стек. Система успешно проходит тесты на балансировку нагрузки и сохраняет работоспособность при потере одного из узлов приложения.
-Дата выполнения: 7 января 2026 г.
 
 ## Лицензия
 
